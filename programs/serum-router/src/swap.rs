@@ -42,7 +42,7 @@ pub fn swap_v4<'info>(
         fee_referral_account: fee_referral_account.map(|r| r.key),
     };
 
-    let ix = dex_v4::instruction_auto::swap(ctx.program.key().clone(), accounts, params)
+    let ix = dex_v4::instruction_auto::swap(ctx.program.key().clone(), accounts, params);
 
     solana_program::program::invoke_signed(
         &ix,

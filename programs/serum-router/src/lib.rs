@@ -66,19 +66,22 @@ pub mod serum_router {
         amount_in: u64,
         amount_out_min: u64,
         match_limit: u64,
-        has_discount_token_account: u8,
+        has_discount_token_account: u8, // 0 = false, 1 = true
     ) -> Result<()> {
-        // Get remaining accounts
-        let remaining_accounts_iter = ctx.remaining_accounts.iter();
-        let discount_token_account = remaining_accounts_iter.next().map(Clone::clone);
-        let fee_referral_account = remaining_accounts_iter.next().map(Clone::clone);
-
+        // Leg 1: sell token 0 for token 1
         let (from_amount, sell_proceeds) = {
             // Token balances before the trade.
             let base_before = token::accessor::amount(&ctx.accounts.input_token_account)?;
             let quote_before = token::accessor::amount(&ctx.accounts.intermediate_token_account)?;
 
             let orderbook = ctx.accounts.orderbook_from();
+            orderbook.swap_cpi(
+                amount_in,
+                0, // any amont out here is fine, revert if final amount out is less than amount_out_min
+                match_limit,
+                1, // sell
+                has_discount_token_account,
+            )?;
 
             // Token balances after the trade.
             let base_after = token::accessor::amount(&ctx.accounts.input_token_account)?;
@@ -91,12 +94,20 @@ pub mod serum_router {
             )
         };
 
+        // Leg 2: buy token 2 with token 1
         let (to_amount, buy_proceeds) = {
             // Token balances before the trade.
             let base_before = token::accessor::amount(&ctx.accounts.input_token_account)?;
             let quote_before = token::accessor::amount(&ctx.accounts.intermediate_token_account)?;
 
-            let orderbook = ctx.accounts.orderbook_from();
+            let orderbook = ctx.accounts.orderbook_to();
+            orderbook.swap_cpi(
+                amount_out_min,
+                sell_proceeds,
+                match_limit,
+                0, // buy
+                has_discount_token_account,
+            )?;
 
             // Token balances after the trade.
             let base_after = token::accessor::amount(&ctx.accounts.input_token_account)?;
