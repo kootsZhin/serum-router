@@ -11,9 +11,14 @@ pub fn swap_v4<'info>(
     side: u8,
     has_discount_token_account: u8,
 ) -> Result<()> {
-    // TODO: assume that both optional accoutns exist
-    let discount_token_account = ctx.remaining_accounts.get(0);
-    let fee_referral_account = ctx.remaining_accounts.get(1);
+    let mut remaining_accounts_iter = ctx.remaining_accounts.iter();
+
+    let mut discount_token_account: Option<AccountInfo> = None;
+    if has_discount_token_account == 1 {
+        discount_token_account = remaining_accounts_iter.next().map(Clone::clone);
+    };
+
+    let fee_referral_account = remaining_accounts_iter.next().map(Clone::clone);
 
     let params = Params {
         base_qty: base_qty,

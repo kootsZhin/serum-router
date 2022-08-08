@@ -69,7 +69,7 @@ pub mod serum_router {
         has_discount_token_account: u8, // 0 = false, 1 = true
     ) -> Result<()> {
         // Leg 1: sell token 0 for token 1
-        let (from_amount, sell_proceeds) = {
+        let (_from_amount, sell_proceeds) = {
             // Token balances before the trade.
             let base_before = token::accessor::amount(&ctx.accounts.input_token_account)?;
             let quote_before = token::accessor::amount(&ctx.accounts.intermediate_token_account)?;
@@ -95,7 +95,7 @@ pub mod serum_router {
         };
 
         // Leg 2: buy token 2 with token 1
-        let (to_amount, buy_proceeds) = {
+        let (_to_amount, buy_proceeds) = {
             // Token balances before the trade.
             let base_before = token::accessor::amount(&ctx.accounts.input_token_account)?;
             let quote_before = token::accessor::amount(&ctx.accounts.intermediate_token_account)?;
@@ -122,7 +122,7 @@ pub mod serum_router {
 
         // The amount of surplus quote currency *not* fully consumed by the
         // second half of the swap.
-        let spill_amount = sell_proceeds.checked_sub(buy_proceeds).unwrap();
+        let _spill_amount = sell_proceeds.checked_sub(buy_proceeds).unwrap();
 
         Ok(())
     }
