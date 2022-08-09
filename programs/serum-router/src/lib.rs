@@ -49,7 +49,7 @@ use anchor_spl::token;
 
 pub mod swap;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("DthR1weAAyUJ2hnTFNafvJP1eSkTvNTNhYw8YsSUMSTA");
 
 // Associated token account for Pubkey::default.
 mod empty {
@@ -97,7 +97,7 @@ pub mod serum_router {
         // Leg 2: buy token 2 with token 1
         let (_to_amount, buy_proceeds) = {
             // Token balances before the trade.
-            let base_before = token::accessor::amount(&ctx.accounts.input_token_account)?;
+            let base_before = token::accessor::amount(&ctx.accounts.output_token_account)?;
             let quote_before = token::accessor::amount(&ctx.accounts.intermediate_token_account)?;
 
             let orderbook = ctx.accounts.orderbook_to();
@@ -110,13 +110,13 @@ pub mod serum_router {
             )?;
 
             // Token balances after the trade.
-            let base_after = token::accessor::amount(&ctx.accounts.input_token_account)?;
+            let base_after = token::accessor::amount(&ctx.accounts.output_token_account)?;
             let quote_after = token::accessor::amount(&ctx.accounts.intermediate_token_account)?;
 
             // Report the delta.
             (
-                base_before.checked_sub(base_after).unwrap(),
-                quote_after.checked_sub(quote_before).unwrap(),
+                base_after.checked_sub(base_before).unwrap(),
+                quote_before.checked_sub(quote_after).unwrap(),
             )
         };
 
@@ -141,7 +141,7 @@ pub struct SwapExactTokensForTokens<'info> {
     #[account(mut, constraint = output_token_account.key != &empty::ID)]
     pub output_token_account: AccountInfo<'info>,
     // User wallet
-    #[account(signer)]
+    #[account(mut, signer)]
     pub user_owner: AccountInfo<'info>,
     // Programs
     pub spl_token_program: AccountInfo<'info>,

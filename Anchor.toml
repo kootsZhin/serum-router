@@ -1,14 +1,18 @@
 [features]
 seeds = false
 skip-lint = false
+
 [programs.localnet]
-serum_router = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+serum_router = "DthR1weAAyUJ2hnTFNafvJP1eSkTvNTNhYw8YsSUMSTA"
+
+[programs.devnet]
+serum_router = "DthR1weAAyUJ2hnTFNafvJP1eSkTvNTNhYw8YsSUMSTA"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "./wallet.json"
 
 [scripts]
