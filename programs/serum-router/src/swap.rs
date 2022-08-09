@@ -18,8 +18,7 @@ pub fn swap_v4<'info>(
         discount_token_account = remaining_accounts_iter.next().map(Clone::clone);
     };
 
-    let fee_referral_account: Option<AccountInfo> = None;
-    // let fee_referral_account = remaining_accounts_iter.next().map(Clone::clone);
+    let fee_referral_account = remaining_accounts_iter.next().map(Clone::clone);
 
     let params = Params {
         base_qty: base_qty,
