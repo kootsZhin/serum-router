@@ -6,8 +6,8 @@ import { assert } from "chai";
 import { SerumRouter } from "../target/types/serum_router";
 
 const DEVNET_DEX_V4 = "CaBZ1iupVQBBBWKF4pVq19QB5tpymLP4ocD5wksd7AqB";
-const BTC_USDC_MARKET = "2XJ3mbLxyVUwkBx5VvuwH2La8xVXGGbpsqeeQk9tWtQB";
-const SOL_USDC_MARKET = "8iVkAwM73dSug2hKci73D6GszDd788KwGPWEbJrixrA9";
+const BTC_USDC_MARKET = "2XJ3mbLxyVUwkBx5VvuwH2La8xVXGGbpsqeeQk9tWtQB"; // With both side of liquidity
+const SOL_USDC_MARKET = "89LWydsqk75RBwkMmWtLJdCVpzQVxHJmjVDidHvgCftn"; // With only bid liquidity (USDC)
 
 const BTC_MINT = "ESspyQX2uXccWxJ4sQm5gN6AuQ7SwBCTLsHfRxHX5w85";
 const WRAPPED_SOL_MINT = "So11111111111111111111111111111111111111112";
@@ -60,12 +60,12 @@ describe("serum-router", () => {
 
   });
 
-  it("Markets loaded!", async () => {
+  it("can load all the markets", async () => {
     assert.ok(btcMarket.address.toString() != "");
     assert.ok(solMarket.address.toString() != "");
   });
 
-  it("Alice accounts set up!", async () => {
+  it("can set up Alice's account", async () => {
     Alice = anchor.web3.Keypair.generate();
 
     await provider.connection.confirmTransaction(
@@ -113,11 +113,11 @@ describe("serum-router", () => {
     assert.ok((await provider.connection.getTokenAccountBalance(btcATA)).value.uiAmount == 0);
   });
 
-  it("Swap!", async () => {
+  it("can swap from WSOL to BTC via USDC", async () => {
 
-    const wsolBefore = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount
+    const wsolBefore = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount;
     const usdcBefore = (await provider.connection.getTokenAccountBalance(usdcATA)).value.uiAmount;
-    const btcBefore = (await provider.connection.getTokenAccountBalance(btcATA)).value.uiAmount
+    const btcBefore = (await provider.connection.getTokenAccountBalance(btcATA)).value.uiAmount;
 
     const swapTx = await program.rpc.swapExactTokensForTokens(
       new anchor.BN(1e9),
@@ -157,13 +157,76 @@ describe("serum-router", () => {
         signers: [Alice]
       },
     );
-    const wsoAfter = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount
-    const usdcAfter = (await provider.connection.getTokenAccountBalance(usdcATA)).value.uiAmount;
-    const btcAfter = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount
 
-    assert.ok(wsolBefore - wsoAfter == 1);
+    const wsolAfter = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount;
+    const usdcAfter = (await provider.connection.getTokenAccountBalance(usdcATA)).value.uiAmount;
+    const btcAfter = (await provider.connection.getTokenAccountBalance(btcATA)).value.uiAmount;
+
+    assert.ok(wsolBefore - wsolAfter == 1);
     assert.ok(Math.floor(usdcAfter - usdcBefore) == 0);
-    assert.ok(btcAfter - btcBefore >= 0);
+    assert.ok(btcAfter - btcBefore > 0);
+  });
+
+  // This is expected to fail because the there's no ask liquidity placed for the WSOL/USDC market
+  it("cannot swap from BTC to WSOL via USDC", async () => {
+
+    const wsolBefore = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount;
+    const usdcBefore = (await provider.connection.getTokenAccountBalance(usdcATA)).value.uiAmount;
+    const btcBefore = (await provider.connection.getTokenAccountBalance(btcATA)).value.uiAmount;
+
+    try {
+      await program.rpc.swapExactTokensForTokens(
+        new anchor.BN((await provider.connection.getTokenAccountBalance(btcATA)).value.amount),
+        new anchor.BN(1e4), // small amount for min output here for testing
+        new anchor.BN(2 ** 32),
+        0,
+        {
+          accounts: {
+            from: {
+              market: btcMarket.address,
+              orderbook: btcMarket.orderbookAddress,
+              eventQueue: btcMarket.eventQueueAddress,
+              bids: btcMarket.bidsAddress,
+              asks: btcMarket.asksAddress,
+              baseVault: btcMarket.baseVault,
+              quoteVault: btcMarket.quoteVault,
+              marketSigner: btcMarketSigner
+            },
+            to: {
+              market: solMarket.address,
+              orderbook: solMarket.orderbookAddress,
+              eventQueue: solMarket.eventQueueAddress,
+              bids: solMarket.bidsAddress,
+              asks: solMarket.asksAddress,
+              baseVault: solMarket.baseVault,
+              quoteVault: solMarket.quoteVault,
+              marketSigner: solMarketSigner
+            },
+            inputTokenAccount: btcATA,
+            intermediateTokenAccount: usdcATA,
+            outputTokenAccount: wsolATA,
+            userOwner: Alice.publicKey,
+            splTokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            dexProgram: new anchor.web3.PublicKey(DEVNET_DEX_V4)
+          },
+          signers: [Alice]
+        },
+      );
+    } catch (e) {
+      const wsolAfter = (await provider.connection.getTokenAccountBalance(wsolATA)).value.uiAmount;
+      const usdcAfter = (await provider.connection.getTokenAccountBalance(usdcATA)).value.uiAmount;
+      const btcAfter = (await provider.connection.getTokenAccountBalance(btcATA)).value.uiAmount;
+
+      assert.ok(wsolAfter === wsolBefore);
+      assert.ok(usdcAfter === usdcBefore);
+      assert.ok(btcAfter === btcBefore);
+
+      return;
+    }
+
+    assert.fail("This test should have failed because there's no ask liquidity placed for the WSOL/USDC market");
+
   });
 
 });

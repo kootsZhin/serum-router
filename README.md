@@ -13,4 +13,7 @@ Currently supporting swapping `token0` to `token2` through `token0/token1` and `
 The idea is simply bundling `token0 -> token1` and `token1 -> token2` swaps through CPI calls and revert if not enough output amount.
 
 ## Deployment / Testing
-`yarn && anchor test`
+
+```bash
+yarn && anchor test
+```
