@@ -21,4 +21,4 @@ anchor-spl = "0.25.0"
 spl-associated-token-account = "1.0.5"
 solana-program = "~1.10"
 
-dex-v4 = { path = "../../../dex-v4/program", features = ["no-entrypoint"]}
+dex-v4 = { git = "https://github.com/Bonfida/dex-v4.git", features = ["no-entrypoint"]}
