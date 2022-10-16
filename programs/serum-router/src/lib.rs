@@ -46,16 +46,13 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::token;
+use solana_program::pubkey;
 
 pub mod swap;
 
 declare_id!("DthR1weAAyUJ2hnTFNafvJP1eSkTvNTNhYw8YsSUMSTA");
 
-// Associated token account for Pubkey::default.
-mod empty {
-    use super::*;
-    declare_id!("HJt8Tjdsc9ms9i4WCZEzhzr4oyf3ANcdzXrNdLPFqm3M");
-}
+static EMPTY_KEY: Pubkey = pubkey!("HJt8Tjdsc9ms9i4WCZEzhzr4oyf3ANcdzXrNdLPFqm3M");
 
 #[program]
 pub mod serum_router {
@@ -134,11 +131,11 @@ pub struct SwapExactTokensForTokens<'info> {
     pub from: MarketAccounts<'info>,
     pub to: MarketAccounts<'info>,
     // User token accounts
-    #[account(mut, constraint = input_token_account.key != &empty::ID)]
+    #[account(mut, constraint = input_token_account.key != &EMPTY_KEY)]
     pub input_token_account: AccountInfo<'info>,
-    #[account(mut, constraint = intermediate_token_account.key != &empty::ID)]
+    #[account(mut, constraint = intermediate_token_account.key != &EMPTY_KEY)]
     pub intermediate_token_account: AccountInfo<'info>,
-    #[account(mut, constraint = output_token_account.key != &empty::ID)]
+    #[account(mut, constraint = output_token_account.key != &EMPTY_KEY)]
     pub output_token_account: AccountInfo<'info>,
     // User wallet
     #[account(mut, signer)]
